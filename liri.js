@@ -4,23 +4,44 @@ var axios = require("axios");
 var Spotify = require('node-spotify-api');
 var spotify = new Spotify(keys.spotify);
 var moment = require('moment');
+var fs = require("fs");
+var command = process.argv[2] + " ";
+var searchedTerm = "";
+var divider = "\n------------------------------------------------------------\n\n";
 
+function appendToLog(command, searchedTerm, data)
+    {
+        fs.appendFile("log.txt", command + searchedTerm + data + divider, function(err) {
+            if (err) {
+              return console.log(err);
+            }
+          });    
+    }
 function concertThis(artist)
     {
         axios.get("https://rest.bandsintown.com/artists/" + artist + "/events?app_id=codingbootcamp").then(
         function(response) 
         {
+            var data = "";
             for(var i = 0; i < response.data.length; i++)
             {
                 if(response.data[i].region)
                 {
                 console.log(artist + " Has a event at " + response.data[i].venue.name + " in " + response.data[i].venue.city + " on " + moment(response.data[i].datetime).format("MM/DD/YYYY"));
+                data = artist + " Has a event at " + response.data[i].venue.name + " in " + response.data[i].venue.city + " on " + moment(response.data[i].datetime).format("MM/DD/YYYY");
+
+                appendToLog(command, searchedTerm, data);
                 }
                 else
                 {
-                    console.log(artist + " Has a event at " + response.data[i].venue.name + " in " + response.data[i].venue.city + ", " + response.data[i].venue.region + " on " + moment(response.data[i].datetime).format("MM/DD/YYYY"));        
+                    console.log(artist + " Has a event at " + response.data[i].venue.name + " in " + response.data[i].venue.city + ", " + response.data[i].venue.region + " on " + moment(response.data[i].datetime).format("MM/DD/YYYY")); 
+                    data = artist + " Has a event at " + response.data[i].venue.name + " in " + response.data[i].venue.city + ", " + response.data[i].venue.region + " on " + moment(response.data[i].datetime).format("MM/DD/YYYY"); 
+
+                    appendToLog(command, searchedTerm, data);
                 }
             }
+
+            
         },
 
         function(error) {
@@ -41,6 +62,8 @@ function concertThis(artist)
             console.log(error.config);
         });
 
+
+
     };
 function spotifyThis(songName)
     {
@@ -51,12 +74,23 @@ function spotifyThis(songName)
             }
             var song = data.tracks.items[1];
             console.log(song.name);
-            for(var i = 0; i<song.artists.length; i++)
-            {
-                console.log(song.artists[i].name);
-            }
-            console.log("Album name: " + song.album.name);
-            console.log("Click here! " + song.external_urls.spotify);
+            var artistName = []        
+                for(var i = 0; i<song.artists.length; i++)
+                {
+                    artistName.push(song.artists[i].name);
+                }                
+            
+            var songData = [
+                "Song name: " + song.name,
+                artistName.join(", "),
+                "Album name: " + song.album.name,
+                "Click here! " + song.external_urls.spotify,
+            ].join("\n\n");
+
+            fs.appendFile("log.txt", command + searchedTerm + "\n\n" + songData + divider, function(err) {
+                if (err) throw err;
+                console.log(songData);
+              });
         });
     };
 function movieThis(movieName)
@@ -76,14 +110,21 @@ function movieThis(movieName)
             {
                 //console.log(response.data);
                 var movie = response.data;
-                console.log("Title: " + movie.Title);
-                console.log("Year: " + movie.Year);
-                console.log("IDMB Rating: " + movie.Ratings[0].Value);
-                console.log("Rotten Tomatos rating: " + movie.Ratings[1].Value);
-                console.log("Country: " + movie.Country);
-                console.log("Language: " + movie.Language);
-                console.log("Plot: " + movie.Plot);
-                console.log("Actors: " + movie.Actors);
+                var movieData = 
+                [
+                    "Title: " + movie.Title,
+                    "Year: " + movie.Year,
+                    "IDMB Rating: " + movie.Ratings[0].Value,
+                    "Rotten Tomatos rating: " + movie.Ratings[1].Value,
+                    "Country: " + movie.Country,
+                    "Language: " + movie.Language,
+                    "Plot: " + movie.Plot,
+                    "Actors: " + movie.Actors
+                ].join("\n\n");
+                fs.appendFile("log.txt", command + searchedTerm + "\n\n" + movieData + divider, function(err) {
+                    if (err) throw err;
+                    console.log(movieData);
+                  });
             })
             .catch(function(error) {
               if (error.response) {
@@ -110,7 +151,6 @@ function movieThis(movieName)
     
 function doThis()
     {
-        var fs = require("fs");
         fs.readFile("random.txt", "utf8", function(error, data) 
         {
         
@@ -145,12 +185,14 @@ function doThis()
     if(process.argv[2] == "concert-this")
     {
         var artist = "Billie Eilish";
+        searchedTerm = "Billie Eilish"
         if(process.argv[3])
         {
             artist="";
             for(var i = 3; i < process.argv.length; i++)
             {
                 artist += process.argv[i] + " ";
+                searchedTerm += process.argv[i] + " ";
             }
             artist=artist.trim();
         }
