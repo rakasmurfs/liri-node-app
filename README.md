@@ -59,7 +59,7 @@ LIRI is a Language Interpretation and Recognition Interface. LIRI is a command l
     
     See screen-shot below:
 
-    ![Results](/assets/screenshots/doThis-results)
+    ![Results](/assets/screenshots/doThis-results.png)
 
 - - -
 
